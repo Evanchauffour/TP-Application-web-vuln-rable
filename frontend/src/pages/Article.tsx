@@ -3,25 +3,28 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useUser } from "../context/UserContext";
 import axiosInstance from "../services/axiosInstance";
+import DOMPurify from "dompurify";
 
 type Article = {
   id: string;
   title: string;
   content: string;
   author_id: number;
+  author_name?: string;
 }
 
 type Comment = {
   id: string;
   content: string;
   user_id: number;
+  author_name?: string;
   created_at?: string;
 }
 
-type User = {
-  id: number;
-  username: string;
-}
+// type User = {
+//   id: number;
+//   username: string;
+// }
 
 const ArticlePage = () => {
   const { id } = useParams(); // ID de l'article depuis l'URL
@@ -31,7 +34,7 @@ const ArticlePage = () => {
   const [article, setArticle] = useState<Article | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>("");
-  const [users, setUsers] = useState<User[]>([]);
+  // const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     // Récupérer les détails de l'article
@@ -44,7 +47,8 @@ const ArticlePage = () => {
         return navigate("/not-found");
       });
 
-    // Récupérer les utilisateurs
+    // Récupérer les utilisateurs - SUPPRIMÉ POUR SÉCURITÉ
+    /*
     axiosInstance
       .get("/users")
       .then((response) => setUsers(response.data))
@@ -52,6 +56,7 @@ const ArticlePage = () => {
         console.error("Erreur lors de la récupération des utilisateurs :", error);
         toast.error("Impossible de charger les utilisateurs.");
       });
+    */
 
     // Récupérer les commentaires de l'article
     axiosInstance
@@ -103,10 +108,9 @@ const ArticlePage = () => {
       <div className="container mx-auto px-4 mt-7">
         <div className="mb-8 backdrop-blur-sm bg-white/60 p-3 rounded-lg">
           <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-          <p className="text-gray-500 text-sm mb-6">Par : {
-            users.find((u) => Number(u.id) === Number(article.author_id))?.username || "Utilisateur inconnu"
-          }</p>
-          <p className="text-lg article-content" dangerouslySetInnerHTML={{ __html: article.content }}></p>
+          <p className="text-gray-500 text-sm mb-6">Par : {article.author_name || "Utilisateur inconnu"}</p>
+          {/* <p className="text-lg article-content" dangerouslySetInnerHTML={{ __html: article.content }}></p> */}
+          <p className="text-lg article-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}></p>
         </div>
 
         <h2 className="text-2xl font-semibold mb-8">Commentaires</h2>
@@ -116,11 +120,9 @@ const ArticlePage = () => {
               <ul className="space-y-4">
                 {comments.map((comment) => (
                   <li key={comment.id} className="border rounded-lg p-4 bg-base-100 shadow-md">
-                    <p dangerouslySetInnerHTML={{ __html: comment.content }}></p>
+                    <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }}></p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Par : {
-                        users.find((u) => Number(u.id) === Number(comment.user_id))?.username || "Utilisateur inconnu"
-                      }
+                      Par : {comment.author_name || "Utilisateur inconnu"}
                     </p>
                   </li>
                 ))}

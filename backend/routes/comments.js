@@ -5,7 +5,12 @@ const { authenticate, authorizeAdmin } = require('../middlewares/authMiddleware'
 // Route pour lister les commentaires d'un article
 router.get('/articles/:id/comments', async (req, res) => {
   const { id } = req.params;
-  const sql = 'SELECT * FROM comments WHERE article_id = ?';
+  const sql = `
+    SELECT comments.*, users.username as author_name 
+    FROM comments 
+    LEFT JOIN users ON comments.user_id = users.id 
+    WHERE article_id = ?
+  `;
   console.log(sql);
 
   try {
@@ -37,12 +42,12 @@ router.get('/comments/:id', async (req, res) => {
 router.post('/articles/:id/comments', async (req, res) => {
   const { id } = req.params;
   const { content, user_id } = req.body;
-  //const sql = 'INSERT INTO comments (content, user_id, article_id) VALUES (?, ?, ?)';
-  const sql = `INSERT INTO comments (user_id, article_id, content) VALUES (${user_id}, ${id}, '${content}')`;
+  // const sql = `INSERT INTO comments (user_id, article_id, content) VALUES (${user_id}, ${id}, '${content}')`;
+  const sql = 'INSERT INTO comments (content, user_id, article_id) VALUES (?, ?, ?)';
   //const sql = `SELECT * FROM comments WHERE user_id = ${user_id}`;
   try {
-    //const [results] = await req.db.execute(sql, [content, user_id, id]);
-    const [results] = await req.db.query(sql);
+    // const [results] = await req.db.query(sql);
+    const [results] = await req.db.execute(sql, [content, user_id, id]);
     const newComment = {
       id: results.insertId,
       content,
@@ -57,7 +62,8 @@ router.post('/articles/:id/comments', async (req, res) => {
 });
 
 // Route pour supprimer un commentaire (admin seulement)
-router.delete('/comments/:id', async (req, res) => {
+// router.delete('/comments/:id', async (req, res) => {
+router.delete('/comments/:id', authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   const sql = 'DELETE FROM comments WHERE id = ?';
   try {

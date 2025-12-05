@@ -4,7 +4,11 @@ const { authenticate, authorizeAdmin } = require('../middlewares/authMiddleware'
 
 // Route pour récupérer tous les articles
 router.get('/', async (req, res) => {
-  const sql = 'SELECT * FROM articles';
+  const sql = `
+    SELECT articles.*, users.username as author_name 
+    FROM articles 
+    LEFT JOIN users ON articles.author_id = users.id
+  `;
   try {
     const [results] = await req.db.execute(sql);
     res.json(results);
@@ -22,10 +26,11 @@ router.post('/search', async (req, res) => {
 
   const { title } = req.body;
   const sql = `SELECT * FROM articles WHERE title LIKE '%${title}%'`;
-  console.log(sql);
+  // const sql = 'SELECT * FROM articles WHERE title LIKE ?';
 
   try {
     const [results] = await req.db.query(sql);
+    // const [results] = await req.db.execute(sql, [`%${title}%`]);
     res.json(results);
   } catch (err) {
     console.error('Erreur lors de la recherche des articles :', err);
@@ -36,11 +41,17 @@ router.post('/search', async (req, res) => {
 // Route pour récupérer un article spécifique
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  const sql = 'SELECT * FROM articles WHERE id = ?';
+  // const sql = 'SELECT * FROM articles WHERE id = ?';
+  const sql = `
+    SELECT articles.*, users.username as author_name 
+    FROM articles 
+    LEFT JOIN users ON articles.author_id = users.id
+    WHERE articles.id = ?
+  `;
   try {
     const [results] = await req.db.execute(sql, [id]);
     if (results.length === 0) {
-      res.status(404).json({ error: 'Article introuvable' });
+      return res.status(404).json({ error: 'Article introuvable' });
     }
     res.json(results[0]);
   } catch (err) {
@@ -50,8 +61,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // Route pour créer un nouvel article
-router.post('/', async (req, res) => {
-  const { title, content, author_id } = req.body;
+// router.post('/', async (req, res) => {
+router.post('/', authenticate, authorizeAdmin, async (req, res) => {
+  const { title, content } = req.body;
+  const author_id = req.user.id;
   const sql = 'INSERT INTO articles (title, content, author_id) VALUES (?, ?, ?)';
   try {
     const [results] = await req.db.execute(sql, [title, content, author_id]);
@@ -69,9 +82,11 @@ router.post('/', async (req, res) => {
 });
 
 // Route pour modifier un article
-router.put('/:id', async (req, res) => {
+// router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { title, content, author_id } = req.body;
+  const { title, content } = req.body;
+  const author_id = req.user.id;
   const sql = 'UPDATE articles SET title = ?, content = ?, author_id = ? WHERE id = ?';
   try {
     const [results] = await req.db.execute(sql, [title, content, author_id, id]);

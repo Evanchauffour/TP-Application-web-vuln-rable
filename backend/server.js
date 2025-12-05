@@ -6,7 +6,10 @@ require('dotenv').config();
 const initializeDbConnection = require('./db');
 
 const app = express();
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:4000'
+}));
 app.use(bodyParser.json());
 
 const startServer = async () => {
