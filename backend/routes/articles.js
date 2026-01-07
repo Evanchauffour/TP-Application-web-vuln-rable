@@ -1,9 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorizeAdmin } = require('../middlewares/authMiddleware');
+const {
+  authenticate,
+  authorizeAdmin,
+} = require("../middlewares/authMiddleware");
 
 // Route pour récupérer tous les articles
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   const sql = `
     SELECT articles.*, users.username as author_name 
     FROM articles 
@@ -13,33 +16,33 @@ router.get('/', async (req, res) => {
     const [results] = await req.db.execute(sql);
     res.json(results);
   } catch (err) {
-    console.error('Erreur lors de la récupération des articles :', err);
-    res.status(500).json({ error: 'Erreur lors de la récupération des articles' });
+    console.error("Erreur lors de la récupération des articles :", err);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des articles" });
   }
 });
 
 // Route pour chercher un article par titre
-router.post('/search', async (req, res) => {
-  console.log(
-    'req.body:', req.body,
-  );
+router.post("/search", async (req, res) => {
+  console.log("req.body:", req.body);
 
   const { title } = req.body;
-  const sql = `SELECT * FROM articles WHERE title LIKE '%${title}%'`;
-  // const sql = 'SELECT * FROM articles WHERE title LIKE ?';
+  //const sql = `SELECT * FROM articles WHERE title LIKE '%${title}%'`;
+  const sql = "SELECT * FROM articles WHERE title LIKE ?";
 
   try {
-    const [results] = await req.db.query(sql);
-    // const [results] = await req.db.execute(sql, [`%${title}%`]);
+    //const [results] = await req.db.query(sql);
+    const [results] = await req.db.execute(sql, [`%${title}%`]);
     res.json(results);
   } catch (err) {
-    console.error('Erreur lors de la recherche des articles :', err);
-    res.status(500).json({ error: 'Erreur lors de la recherche des articles' });
+    console.error("Erreur lors de la recherche des articles :", err);
+    res.status(500).json({ error: "Erreur lors de la recherche des articles" });
   }
 });
 
 // Route pour récupérer un article spécifique
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   const { id } = req.params;
   // const sql = 'SELECT * FROM articles WHERE id = ?';
   const sql = `
@@ -51,74 +54,92 @@ router.get('/:id', async (req, res) => {
   try {
     const [results] = await req.db.execute(sql, [id]);
     if (results.length === 0) {
-      return res.status(404).json({ error: 'Article introuvable' });
+      return res.status(404).json({ error: "Article introuvable" });
     }
     res.json(results[0]);
   } catch (err) {
-    console.error('Erreur lors de la récupération de l\'article :', err);
-    res.status(500).json({ error: 'Erreur lors de la récupération de l\'article' });
+    console.error("Erreur lors de la récupération de l'article :", err);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération de l'article" });
   }
 });
 
 // Route pour créer un nouvel article
 // router.post('/', async (req, res) => {
-router.post('/', authenticate, authorizeAdmin, async (req, res) => {
+router.post("/", authenticate, authorizeAdmin, async (req, res) => {
   const { title, content } = req.body;
   const author_id = req.user.id;
-  const sql = 'INSERT INTO articles (title, content, author_id) VALUES (?, ?, ?)';
+  const sql =
+    "INSERT INTO articles (title, content, author_id) VALUES (?, ?, ?)";
   try {
     const [results] = await req.db.execute(sql, [title, content, author_id]);
     const newArticle = {
       id: results.insertId,
       title,
       content,
-      author_id
+      author_id,
     };
-    res.status(201).json({ message: 'Article créé avec succès', article: newArticle });
+    res
+      .status(201)
+      .json({ message: "Article créé avec succès", article: newArticle });
   } catch (err) {
-    console.error('Erreur lors de la création de l\'article :', err);
-    res.status(500).json({ error: 'Erreur lors de la création de l\'article' });
+    console.error("Erreur lors de la création de l'article :", err);
+    res.status(500).json({ error: "Erreur lors de la création de l'article" });
   }
 });
 
 // Route pour modifier un article
 // router.put('/:id', async (req, res) => {
-router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
+router.put("/:id", authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
   const author_id = req.user.id;
-  const sql = 'UPDATE articles SET title = ?, content = ?, author_id = ? WHERE id = ?';
+  const sql =
+    "UPDATE articles SET title = ?, content = ?, author_id = ? WHERE id = ?";
   try {
-    const [results] = await req.db.execute(sql, [title, content, author_id, id]);
+    const [results] = await req.db.execute(sql, [
+      title,
+      content,
+      author_id,
+      id,
+    ]);
     if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'Article introuvable' });
+      return res.status(404).json({ error: "Article introuvable" });
     }
     const updatedArticle = {
       id,
       title,
       content,
-      author_id
+      author_id,
     };
-    res.json({ message: 'Article modifié avec succès', article: updatedArticle });
+    res.json({
+      message: "Article modifié avec succès",
+      article: updatedArticle,
+    });
   } catch (err) {
-    console.error('Erreur lors de la modification de l\'article :', err);
-    res.status(500).json({ error: 'Erreur lors de la modification de l\'article' });
+    console.error("Erreur lors de la modification de l'article :", err);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la modification de l'article" });
   }
 });
 
 // Route pour supprimer un article
-router.delete('/:id', authenticate, authorizeAdmin, async (req, res) => {
+router.delete("/:id", authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const sql = 'DELETE FROM articles WHERE id = ?';
+  const sql = "DELETE FROM articles WHERE id = ?";
   try {
     const [results] = await req.db.execute(sql, [id]);
     if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'Article introuvable' });
+      return res.status(404).json({ error: "Article introuvable" });
     }
-    res.json({ message: 'Article supprimé avec succès' });
+    res.json({ message: "Article supprimé avec succès" });
   } catch (err) {
-    console.error('Erreur lors de la suppression de l\'article :', err);
-    res.status(500).json({ error: 'Erreur lors de la suppression de l\'article' });
+    console.error("Erreur lors de la suppression de l'article :", err);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la suppression de l'article" });
   }
 });
 

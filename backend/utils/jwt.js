@@ -1,12 +1,10 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 // Générer un token JWT
 const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, role: user.role }, // Payload : inclure l'ID utilisateur et son rôle
-    process.env.JWT_SECRET, // Clé secrète pour signer le token
-    { expiresIn: '12h' } // Expiration du token (ici 3 heures)
-  );
+  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: "3h",
+  });
 };
 
 // Vérifier un token JWT
