@@ -1,10 +1,16 @@
-const mysql = require('mysql2/promise');
+const mysql = require("mysql2/promise");
 
 const waitForDatabaseConnection = async () => {
-  const retryInterval = 2000; // Intervalle en millisecondes (2 secondes)
-  while (true) {
+  const retryInterval = 2000;
+  const maxRetries = 10;
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
     try {
-      console.log('Tentative de connexion à la base de données...');
+      attempts++;
+      console.log(
+        `Tentative de connexion à la base de données (${attempts}/${maxRetries})...`
+      );
       const connection = await mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -12,12 +18,20 @@ const waitForDatabaseConnection = async () => {
         database: process.env.DB_NAME,
       });
 
-      console.log('Connecté à la base de données MySQL');
-      connection.end(); // Ferme la connexion temporaire
-      break; // Si la connexion réussit, on sort de la boucle
+      console.log("Connecté à la base de données MySQL");
+      connection.end();
+      return; // Si la connexion réussit, on sort de la fonction
     } catch (err) {
-      console.error('Base de données non prête, nouvelle tentative dans 2 secondes...');
-      await new Promise((resolve) => setTimeout(resolve, retryInterval)); // Attente avant de réessayer
+      if (attempts >= maxRetries) {
+        console.error(`Échec de connexion après ${maxRetries} tentatives`);
+        throw new Error(
+          "Impossible de se connecter à la base de données après plusieurs tentatives"
+        );
+      }
+      console.error(
+        `Base de données non prête, nouvelle tentative dans 2 secondes... (${attempts}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryInterval));
     }
   }
 };

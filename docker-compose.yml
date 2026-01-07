@@ -28,7 +28,7 @@ services:
       - DB_USER=root
       - DB_PASSWORD=password
       - DB_NAME=blog
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && if [ ! -f jwt-private.key ]; then ssh-keygen -t rsa -b 4096 -m PEM -f jwt-private.key -N '' && openssl rsa -in jwt-private.key -pubout -outform PEM -out jwt-public.key && echo 'JWT keys correctement générées'; fi && npm run dev"
     depends_on:
       - db
     restart: on-failure
